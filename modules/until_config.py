@@ -31,6 +31,7 @@ from .file_utils import cached_path
 
 logger = logging.getLogger(__name__)
 
+
 class PretrainedConfig(object):
 
     pretrained_model_archive_map = {}
@@ -54,17 +55,15 @@ class PretrainedConfig(object):
                 logger.error(
                     "Model name '{}' was not found in model name list. "
                     "We assumed '{}' was a path or url but couldn't find any file "
-                    "associated to this path or url.".format(
-                        pretrained_model_name,
-                        archive_file))
+                    "associated to this path or url.".format(pretrained_model_name, archive_file)
+                )
             return None
         if resolved_archive_file == archive_file:
             if task_config is None or task_config.local_rank == 0:
                 logger.info("loading archive file {}".format(archive_file))
         else:
             if task_config is None or task_config.local_rank == 0:
-                logger.info("loading archive file {} from cache at {}".format(
-                    archive_file, resolved_archive_file))
+                logger.info("loading archive file {} from cache at {}".format(archive_file, resolved_archive_file))
         tempdir = None
         if os.path.isdir(resolved_archive_file):
             serialization_dir = resolved_archive_file
@@ -72,9 +71,8 @@ class PretrainedConfig(object):
             # Extract archive to temp dir
             tempdir = tempfile.mkdtemp()
             if task_config is None or task_config.local_rank == 0:
-                logger.info("extracting archive file {} to temp dir {}".format(
-                    resolved_archive_file, tempdir))
-            with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+                logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, tempdir))
+            with tarfile.open(resolved_archive_file, "r:gz") as archive:
                 archive.extractall(tempdir)
             serialization_dir = tempdir
         # Load config
@@ -87,7 +85,7 @@ class PretrainedConfig(object):
         if state_dict is None:
             weights_path = os.path.join(serialization_dir, cls.weights_name)
             if os.path.exists(weights_path):
-                state_dict = torch.load(weights_path, map_location='cpu')
+                state_dict = torch.load(weights_path, map_location="cpu")
             else:
                 if task_config is None or task_config.local_rank == 0:
                     logger.info("Weight doesn't exsits. {}".format(weights_path))
@@ -109,7 +107,7 @@ class PretrainedConfig(object):
     @classmethod
     def from_json_file(cls, json_file):
         """Constructs a `BertConfig` from a json file of parameters."""
-        with open(json_file, "r", encoding='utf-8') as reader:
+        with open(json_file, "r", encoding="utf-8") as reader:
             text = reader.read()
         return cls.from_dict(json.loads(text))
 

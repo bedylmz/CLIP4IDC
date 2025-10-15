@@ -2,6 +2,8 @@
 
 <h1>This is a fork of the original project, so the guide below may not work as intended.</h1>
 
+<div align="left">
+
 # CLIP4IDC: CLIP for Image Difference Captioning
 
 The implementation of paper [**CLIP4IDC: CLIP for Image Difference Captioning**](https://arxiv.org/abs/2206.00629). 

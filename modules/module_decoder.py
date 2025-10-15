@@ -38,29 +38,32 @@ from .until_module import PreTrainedModel, LayerNorm, ACT2FN
 logger = logging.getLogger(__name__)
 
 PRETRAINED_MODEL_ARCHIVE_MAP = {}
-CONFIG_NAME = 'decoder_config.json'
-WEIGHTS_NAME = 'decoder_pytorch_model.bin'
+CONFIG_NAME = "decoder_config.json"
+WEIGHTS_NAME = "decoder_pytorch_model.bin"
 
 
 class DecoderConfig(PretrainedConfig):
-    """Configuration class to store the configuration of a `DecoderModel`.
-    """
+    """Configuration class to store the configuration of a `DecoderModel`."""
+
     pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
     config_name = CONFIG_NAME
     weights_name = WEIGHTS_NAME
-    def __init__(self,
-                 vocab_size_or_config_json_file,
-                 hidden_size=768,
-                 num_hidden_layers=12,
-                 num_attention_heads=12,
-                 intermediate_size=3072,
-                 hidden_act="gelu",
-                 hidden_dropout_prob=0.1,
-                 attention_probs_dropout_prob=0.1,
-                 type_vocab_size=2,
-                 initializer_range=0.02,
-                 max_target_embeddings=128,
-                 num_decoder_layers=1):
+
+    def __init__(
+        self,
+        vocab_size_or_config_json_file,
+        hidden_size=768,
+        num_hidden_layers=12,
+        num_attention_heads=12,
+        intermediate_size=3072,
+        hidden_act="gelu",
+        hidden_dropout_prob=0.1,
+        attention_probs_dropout_prob=0.1,
+        type_vocab_size=2,
+        initializer_range=0.02,
+        max_target_embeddings=128,
+        num_decoder_layers=1,
+    ):
         """Constructs DecoderConfig.
 
         Args:
@@ -87,7 +90,7 @@ class DecoderConfig(PretrainedConfig):
             num_decoder_layers:
         """
         if isinstance(vocab_size_or_config_json_file, str):
-            with open(vocab_size_or_config_json_file, "r", encoding='utf-8') as reader:
+            with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
                 self.__dict__[key] = value
@@ -105,8 +108,10 @@ class DecoderConfig(PretrainedConfig):
             self.max_target_embeddings = max_target_embeddings
             self.num_decoder_layers = num_decoder_layers
         else:
-            raise ValueError("First argument must be either a vocabulary size (int)"
-                             "or the path to a pretrained model config file (str)")
+            raise ValueError(
+                "First argument must be either a vocabulary size (int)"
+                "or the path to a pretrained model config file (str)"
+            )
 
 
 class BertSelfOutput(nn.Module):
@@ -122,12 +127,14 @@ class BertSelfOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
+
 class BertIntermediate(nn.Module):
     def __init__(self, config):
         super(BertIntermediate, self).__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
-        self.intermediate_act_fn = ACT2FN[config.hidden_act] \
-            if isinstance(config.hidden_act, str) else config.hidden_act
+        self.intermediate_act_fn = (
+            ACT2FN[config.hidden_act] if isinstance(config.hidden_act, str) else config.hidden_act
+        )
 
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
@@ -153,8 +160,7 @@ class BertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super(BertPredictionHeadTransform, self).__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.transform_act_fn = ACT2FN[config.hidden_act] \
-            if isinstance(config.hidden_act, str) else config.hidden_act
+        self.transform_act_fn = ACT2FN[config.hidden_act] if isinstance(config.hidden_act, str) else config.hidden_act
         self.LayerNorm = LayerNorm(config.hidden_size, eps=1e-12)
 
     def forward(self, hidden_states):
@@ -171,9 +177,9 @@ class BertLMPredictionHead(nn.Module):
 
         # The output weights are the same as the input embeddings, but there is
         # an output-only bias for each token.
-        self.decoder = nn.Linear(decoder_model_embedding_weights.size(1),
-                                 decoder_model_embedding_weights.size(0),
-                                 bias=False)
+        self.decoder = nn.Linear(
+            decoder_model_embedding_weights.size(1), decoder_model_embedding_weights.size(0), bias=False
+        )
         self.decoder.weight = decoder_model_embedding_weights
         self.bias = nn.Parameter(torch.zeros(decoder_model_embedding_weights.size(0)))
 
@@ -192,8 +198,9 @@ class BertOnlyMLMHead(nn.Module):
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
+
 class MultiHeadAttention(nn.Module):
-    ''' Multi-Head Attention module '''
+    """Multi-Head Attention module"""
 
     def __init__(self, config):
         super(MultiHeadAttention, self).__init__()
@@ -201,7 +208,8 @@ class MultiHeadAttention(nn.Module):
         if config.hidden_size % config.num_attention_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (config.hidden_size, config.num_attention_heads))
+                "heads (%d)" % (config.hidden_size, config.num_attention_heads)
+            )
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
@@ -246,13 +254,14 @@ class MultiHeadAttention(nn.Module):
 
         return context_layer, attention_scores
 
+
 class PositionwiseFeedForward(nn.Module):
-    ''' A two-feed-forward-layer module '''
+    """A two-feed-forward-layer module"""
 
     def __init__(self, d_in, d_hid, dropout=0.1):
         super().__init__()
-        self.w_1 = nn.Conv1d(d_in, d_hid, 1) # position-wise
-        self.w_2 = nn.Conv1d(d_hid, d_in, 1) # position-wise
+        self.w_1 = nn.Conv1d(d_in, d_hid, 1)  # position-wise
+        self.w_2 = nn.Conv1d(d_hid, d_in, 1)  # position-wise
         self.layer_norm = nn.LayerNorm(d_in)
         self.dropout = nn.Dropout(dropout)
 
@@ -265,6 +274,7 @@ class PositionwiseFeedForward(nn.Module):
         output = self.layer_norm(output + residual)
         return output
 
+
 class DecoderAttention(nn.Module):
     def __init__(self, config):
         super(DecoderAttention, self).__init__()
@@ -275,6 +285,7 @@ class DecoderAttention(nn.Module):
         att_output, attention_probs = self.att(q, k, v, attention_mask)
         attention_output = self.output(att_output, q)
         return attention_output, attention_probs
+
 
 class EncoderLayer(nn.Module):
     def __init__(self, config):
@@ -288,6 +299,7 @@ class EncoderLayer(nn.Module):
         intermediate_output = self.intermediate(slf_output)
         dec_output = self.output(intermediate_output, slf_output)
         return dec_output, slf_att_scores
+
 
 class DecoderLayer(nn.Module):
     def __init__(self, config):
@@ -304,9 +316,10 @@ class DecoderLayer(nn.Module):
         dec_output = self.output(intermediate_output, dec_output)
         return dec_output, dec_att_scores
 
+
 class DecoderEmbeddings(nn.Module):
-    """Construct the embeddings from word, position and token_type embeddings.
-    """
+    """Construct the embeddings from word, position and token_type embeddings."""
+
     def __init__(self, config, decoder_word_embeddings_weight, decoder_position_embeddings_weight):
         super(DecoderEmbeddings, self).__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
@@ -332,6 +345,7 @@ class DecoderEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         return embeddings
 
+
 class Encoder(nn.Module):
     def __init__(self, config):
         super(Encoder, self).__init__()
@@ -352,6 +366,7 @@ class Encoder(nn.Module):
             all_dec_att_probs.append(dec_att_scores)
         return all_encoder_layers, all_dec_att_probs
 
+
 class Decoder(nn.Module):
     def __init__(self, config):
         super(Decoder, self).__init__()
@@ -364,9 +379,13 @@ class Decoder(nn.Module):
         all_dec_att_probs = []
         for i, layer_module in enumerate(self.layer):
             if isinstance(encoder_outs, list):
-                hidden_states, dec_att_scores = layer_module(hidden_states, encoder_outs[i], self_attn_mask, attention_mask)
+                hidden_states, dec_att_scores = layer_module(
+                    hidden_states, encoder_outs[i], self_attn_mask, attention_mask
+                )
             else:
-                hidden_states, dec_att_scores = layer_module(hidden_states, encoder_outs, self_attn_mask, attention_mask)
+                hidden_states, dec_att_scores = layer_module(
+                    hidden_states, encoder_outs, self_attn_mask, attention_mask
+                )
             if output_all_encoded_layers:
                 all_encoder_layers.append(hidden_states)
                 all_dec_att_probs.append(dec_att_scores)
@@ -374,6 +393,7 @@ class Decoder(nn.Module):
             all_encoder_layers.append(hidden_states)
             all_dec_att_probs.append(dec_att_scores)
         return all_encoder_layers, all_dec_att_probs
+
 
 class DecoderClassifier(nn.Module):
     def __init__(self, config, embedding_weights):
@@ -384,8 +404,8 @@ class DecoderClassifier(nn.Module):
         cls_scores = self.cls(hidden_states)
         return cls_scores
 
-class DecoderModel(PreTrainedModel):
 
+class DecoderModel(PreTrainedModel):
     """
     Transformer decoder consisting of *args.decoder_layers* layers. Each layer
     is a :class:`TransformerDecoderLayer`.
@@ -419,15 +439,17 @@ class DecoderModel(PreTrainedModel):
         """
         embedding_output = self.embeddings(input_ids)
 
-        extended_encoder_mask = encoder_mask.unsqueeze(1).unsqueeze(2)   # b x 1 x 1 x ls
-        extended_encoder_mask = extended_encoder_mask.to(dtype=self.dtype) # fp16 compatibility
+        extended_encoder_mask = encoder_mask.unsqueeze(1).unsqueeze(2)  # b x 1 x 1 x ls
+        extended_encoder_mask = extended_encoder_mask.to(dtype=self.dtype)  # fp16 compatibility
         extended_encoder_mask = (1.0 - extended_encoder_mask) * -10000.0
 
         extended_answer_mask = answer_mask.unsqueeze(1).unsqueeze(2)
         extended_answer_mask = extended_answer_mask.to(dtype=self.dtype)  # fp16 compatibility
 
         sz_b, len_s, _ = embedding_output.size()
-        subsequent_mask = torch.triu(torch.ones((len_s, len_s), device=embedding_output.device, dtype=embedding_output.dtype), diagonal=1)
+        subsequent_mask = torch.triu(
+            torch.ones((len_s, len_s), device=embedding_output.device, dtype=embedding_output.dtype), diagonal=1
+        )
         self_attn_mask = subsequent_mask.unsqueeze(0).expand(sz_b, -1, -1).unsqueeze(1)  # b x 1 x ls x ls
         slf_attn_mask = ((1.0 - extended_answer_mask) + self_attn_mask).gt(0).to(dtype=self.dtype)
         self_attn_mask = slf_attn_mask * -10000.0
@@ -435,11 +457,12 @@ class DecoderModel(PreTrainedModel):
         encoder_outs, _ = self.encoder(encoder_outs, extended_encoder_mask, output_all_encoded_layers=True)
         # encoder_outs = encoder_outs[-1]
 
-        decoded_layers, dec_att_scores = self.decoder(embedding_output,
-                                      encoder_outs,
-                                      self_attn_mask,
-                                      extended_encoder_mask,
-                                      )
+        decoded_layers, dec_att_scores = self.decoder(
+            embedding_output,
+            encoder_outs,
+            self_attn_mask,
+            extended_encoder_mask,
+        )
         sequence_output = decoded_layers[-1]
         cls_scores = self.classifier(sequence_output)
 

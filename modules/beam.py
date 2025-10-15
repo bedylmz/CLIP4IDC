@@ -114,3 +114,7 @@ class Beam():
             k = self.prev_ks[j][k]
 
         return list(map(lambda x: x.item(), hyp[::-1]))
+
+
+
+

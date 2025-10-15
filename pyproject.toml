@@ -1,0 +1,25 @@
+[project]
+name = "semclip"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3>=1.37.1",
+    "botocore>=1.37.1",
+    "ftfy>=6.3.1",
+    "matplotlib>=3.10.0",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.1.0",
+    "pip>=25.0.1",
+    "pycocoevalcap>=1.2",
+    "pycocotools>=2.0.8",
+    "regex>=2024.11.6",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "streamlit>=1.42.2",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.52.3",
+]

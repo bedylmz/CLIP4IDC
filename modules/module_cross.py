@@ -38,28 +38,31 @@ from .until_module import PreTrainedModel, LayerNorm, ACT2FN
 logger = logging.getLogger(__name__)
 
 PRETRAINED_MODEL_ARCHIVE_MAP = {}
-CONFIG_NAME = 'cross_config.json'
-WEIGHTS_NAME = 'cross_pytorch_model.bin'
+CONFIG_NAME = "cross_config.json"
+WEIGHTS_NAME = "cross_pytorch_model.bin"
 
 
 class CrossConfig(PretrainedConfig):
-    """Configuration class to store the configuration of a `CrossModel`.
-    """
+    """Configuration class to store the configuration of a `CrossModel`."""
+
     pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
     config_name = CONFIG_NAME
     weights_name = WEIGHTS_NAME
-    def __init__(self,
-                 vocab_size_or_config_json_file,
-                 hidden_size=768,
-                 num_hidden_layers=12,
-                 num_attention_heads=12,
-                 intermediate_size=3072,
-                 hidden_act="gelu",
-                 hidden_dropout_prob=0.1,
-                 attention_probs_dropout_prob=0.1,
-                 max_position_embeddings=512,
-                 type_vocab_size=2,
-                 initializer_range=0.02):
+
+    def __init__(
+        self,
+        vocab_size_or_config_json_file,
+        hidden_size=768,
+        num_hidden_layers=12,
+        num_attention_heads=12,
+        intermediate_size=3072,
+        hidden_act="gelu",
+        hidden_dropout_prob=0.1,
+        attention_probs_dropout_prob=0.1,
+        max_position_embeddings=512,
+        type_vocab_size=2,
+        initializer_range=0.02,
+    ):
         """Constructs CrossConfig.
 
         Args:
@@ -85,7 +88,7 @@ class CrossConfig(PretrainedConfig):
                 initializing all weight matrices.
         """
         if isinstance(vocab_size_or_config_json_file, str):
-            with open(vocab_size_or_config_json_file, "r", encoding='utf-8') as reader:
+            with open(vocab_size_or_config_json_file, "r", encoding="utf-8") as reader:
                 json_config = json.loads(reader.read())
             for key, value in json_config.items():
                 self.__dict__[key] = value
@@ -102,13 +105,15 @@ class CrossConfig(PretrainedConfig):
             self.type_vocab_size = type_vocab_size
             self.initializer_range = initializer_range
         else:
-            raise ValueError("First argument must be either a vocabulary size (int)"
-                             "or the path to a pretrained model config file (str)")
+            raise ValueError(
+                "First argument must be either a vocabulary size (int)"
+                "or the path to a pretrained model config file (str)"
+            )
 
 
 class CrossEmbeddings(nn.Module):
-    """Construct the embeddings from word, position and token_type embeddings.
-    """
+    """Construct the embeddings from word, position and token_type embeddings."""
+
     def __init__(self, config):
         super(CrossEmbeddings, self).__init__()
 
@@ -137,13 +142,15 @@ class CrossEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         return embeddings
 
+
 class CrossSelfAttention(nn.Module):
     def __init__(self, config):
         super(CrossSelfAttention, self).__init__()
         if config.hidden_size % config.num_attention_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (config.hidden_size, config.num_attention_heads))
+                "heads (%d)" % (config.hidden_size, config.num_attention_heads)
+            )
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
@@ -218,8 +225,9 @@ class CrossIntermediate(nn.Module):
     def __init__(self, config):
         super(CrossIntermediate, self).__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
-        self.intermediate_act_fn = ACT2FN[config.hidden_act] \
-            if isinstance(config.hidden_act, str) else config.hidden_act
+        self.intermediate_act_fn = (
+            ACT2FN[config.hidden_act] if isinstance(config.hidden_act, str) else config.hidden_act
+        )
 
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
@@ -291,8 +299,7 @@ class CrossPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super(CrossPredictionHeadTransform, self).__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.transform_act_fn = ACT2FN[config.hidden_act] \
-            if isinstance(config.hidden_act, str) else config.hidden_act
+        self.transform_act_fn = ACT2FN[config.hidden_act] if isinstance(config.hidden_act, str) else config.hidden_act
         self.LayerNorm = LayerNorm(config.hidden_size, eps=1e-12)
 
     def forward(self, hidden_states):
@@ -309,9 +316,9 @@ class CrossLMPredictionHead(nn.Module):
 
         # The output weights are the same as the input embeddings, but there is
         # an output-only bias for each token.
-        self.decoder = nn.Linear(cross_model_embedding_weights.size(1),
-                                 cross_model_embedding_weights.size(0),
-                                 bias=False)
+        self.decoder = nn.Linear(
+            cross_model_embedding_weights.size(1), cross_model_embedding_weights.size(0), bias=False
+        )
         self.decoder.weight = cross_model_embedding_weights
         self.bias = nn.Parameter(torch.zeros(cross_model_embedding_weights.size(0)))
 
@@ -380,13 +387,13 @@ class CrossModel(PreTrainedModel):
         # positions we want to attend and -10000.0 for masked positions.
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
-        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype) # fp16 compatibility
+        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype)  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
         embedding_output = self.embeddings(concat_input, concat_type)
-        encoded_layers = self.encoder(embedding_output,
-                                      extended_attention_mask,
-                                      output_all_encoded_layers=output_all_encoded_layers)
+        encoded_layers = self.encoder(
+            embedding_output, extended_attention_mask, output_all_encoded_layers=output_all_encoded_layers
+        )
         sequence_output = encoded_layers[-1]
         pooled_output = self.pooler(sequence_output)
         if not output_all_encoded_layers:
